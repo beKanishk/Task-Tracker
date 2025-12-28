@@ -1,5 +1,6 @@
 package com.task.tracker.dto;
 
+import com.task.tracker.model.TaskType;
 import jakarta.annotation.Nullable;
 import lombok.*;
 
@@ -20,5 +21,9 @@ public class TaskRequestDTO {
     private LocalDate endDate;
 
     @Nullable
-    private Integer targetHours;
+    private Integer targetValue;
+    @Nullable
+    private String unit;
+
+    private TaskType taskType;
 }

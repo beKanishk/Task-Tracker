@@ -38,12 +38,21 @@ public class TaskService {
                 .description(dto.getDescription())
                 .startDate(dto.getStartDate())
                 .endDate(dto.getEndDate())
-                .targetHours(dto.getTargetHours())
+                .targetValue(dto.getTargetValue())
                 .status(TaskStatus.ACTIVE)   // default
                 .createdAt(LocalDate.now())
                 .build();
 
         return taskRepository.save(task);
     }
+
+    public List<String> findDistinctUserIds() {
+        return taskRepository.findAllUserIdOnly()
+                .stream()
+                .map(Task::getUserId)
+                .distinct()
+                .toList();
+    }
+
 
 }

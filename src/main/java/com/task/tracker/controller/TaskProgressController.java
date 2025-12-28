@@ -1,5 +1,7 @@
 package com.task.tracker.controller;
 
+import com.task.tracker.dto.TaskProgressRequestDTO;
+import com.task.tracker.dto.TaskProgressResponseDTO;
 import com.task.tracker.model.TaskProgress;
 import com.task.tracker.service.TaskProgressService;
 import lombok.RequiredArgsConstructor;
@@ -27,16 +29,68 @@ public class TaskProgressController {
         return taskProgressService.markCompletedToday(userId, taskId);
     }
 
+    @PostMapping("/boolean/mark")
+    public TaskProgressResponseDTO markBooleanTask(
+            @RequestBody TaskProgressRequestDTO request
+    ) {
+        TaskProgress progress = taskProgressService.markBooleanTask(request);
+
+        return TaskProgressResponseDTO.builder()
+                .taskId(progress.getTaskId())
+                .userId(progress.getUserId())
+                .date(progress.getDate())
+                .completedToday(progress.getCompletedToday())
+                .progressPercent(progress.getProgressPercent())
+                .taskType("BOOLEAN")
+                .completionType("TICK_ONLY")
+                .build();
+    }
+
+
+//    /**
+//     * Toggle completion for today (mark / unmark)
+//     */
+//    @PostMapping("/{userId}/{taskId}/toggle-today")
+//    public TaskProgress toggleToday(
+//            @PathVariable String userId,
+//            @PathVariable String taskId,
+//            @RequestParam Integer completed
+//    ) {
+//        return taskProgressService.toggleToday(userId, taskId);
+//    }
+
     /**
      * Toggle completion for today (mark / unmark)
      */
-    @PostMapping("/{userId}/{taskId}/toggle-today")
+    @PostMapping("/toggle-today")
     public TaskProgress toggleToday(
-            @PathVariable String userId,
-            @PathVariable String taskId
-    ) {
-        return taskProgressService.toggleToday(userId, taskId);
+            @RequestBody TaskProgressRequestDTO requestDTO
+            ) {
+        return taskProgressService.toggleToday(requestDTO);
     }
+
+    @PostMapping("/quantitative/log")
+    public TaskProgressResponseDTO logQuantitativeProgress(
+            @RequestBody TaskProgressRequestDTO request
+    ) {
+        TaskProgress progress = taskProgressService.logProgress(request);
+
+        return TaskProgressResponseDTO.builder()
+                .taskId(progress.getTaskId())
+                .userId(progress.getUserId())
+                .date(progress.getDate())
+                .completedToday(progress.getCompletedToday())
+                .progressPercent(progress.getProgressPercent())
+                .valueCompleted(progress.getValueCompleted())
+                .taskType("QUANTITATIVE")
+                .completionType(
+                        progress.getValueCompleted() == null
+                                ? "TICK_ONLY"
+                                : "VALUE_LOGGED"
+                )
+                .build();
+    }
+
 
     /**
      * Get progress history for a specific task

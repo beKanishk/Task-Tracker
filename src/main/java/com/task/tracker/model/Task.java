@@ -26,7 +26,10 @@ public class Task {
 
     private TaskStatus status;
 
-    private Integer targetHours;
+    private TaskType taskType;
+
+    private Integer targetValue;
+    private String unit;
     private Integer progressPercent;
 
     private LocalDate startDate;

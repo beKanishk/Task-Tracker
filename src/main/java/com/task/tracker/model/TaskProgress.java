@@ -28,4 +28,5 @@ public class TaskProgress {
     private Integer progressPercent;
 
     private Boolean completedToday;
+    private Integer valueCompleted;
 }
