@@ -26,6 +26,9 @@ public class TaskProgressService {
     @Autowired
     private DailySummaryService dailySummaryService;
 
+    @Autowired
+    private HeatMapService heatMapService;
+
     public TaskProgress markCompletedToday(String userId, String taskId){
         LocalDate today = LocalDate.now();
 
@@ -110,6 +113,92 @@ public class TaskProgressService {
         return results;
     }
 
+//    public TaskProgress logProgress(TaskProgressRequestDTO requestDTO) {
+//
+//        String taskId = requestDTO.getTaskId();
+//        String userId = requestDTO.getUserId();
+//        Integer valueCompleted = requestDTO.getValueCompleted();
+//
+//        LocalDate today = LocalDate.now();
+//
+//        Task task = taskRepository.findById(taskId)
+//                .orElseThrow(() -> new RuntimeException("Task not found"));
+//
+//        TaskProgress progress =
+//                taskProgressRepository.findByUserIdAndDateAndTaskId(userId, today, taskId);
+//
+//        if (progress == null) {
+//            progress = TaskProgress.builder()
+//                    .userId(userId)
+//                    .taskId(taskId)
+//                    .date(today)
+//                    .build();
+//        }
+//
+//        // QUANTITATIVE TASK
+//        if (task.getTaskType() == TaskType.QUANTITATIVE) {
+//
+//            // no value entered → treat as tick done
+//            if (valueCompleted == null) {
+//
+//                progress.setValueCompleted(null);
+//                progress.setCompletedToday(true);
+//                progress.setProgressPercent(100);
+//
+//                // don't modify task progress snapshot
+//                return taskProgressRepository.save(progress);
+//            }
+//
+//            // avoid invalid or negative input
+//            if (valueCompleted < 0) valueCompleted = 0;
+//
+//            progress.setValueCompleted(valueCompleted);
+//
+//            Integer target = task.getTargetValue();
+//
+//            // avoid divide-by-zero
+//            if (target == null || target == 0) {
+//                progress.setProgressPercent(null);
+//                progress.setCompletedToday(true);
+//                return taskProgressRepository.save(progress);
+//            }
+//
+//
+//            int percent = (int) Math.round(
+//                    (valueCompleted * 100.0) / target
+//            );
+//
+//            if (percent > 100) percent = 100;
+//            if (percent < 0) percent = 0;
+//
+//            progress.setProgressPercent(percent);
+//            progress.setCompletedToday(percent > 0);
+//
+//            // update task snapshot
+//            task.setProgressPercent(percent);
+//
+//            if (percent == 100) {
+//                task.setStatus(TaskStatus.COMPLETED);
+//            }
+//
+//            taskRepository.save(task);
+//        }
+//
+//        // BOOLEAN TASK
+//        else if (task.getTaskType() == TaskType.BOOLEAN) {
+//            progress.setCompletedToday(true);
+//
+//            // do NOT force progressPercent if task has no measurable value
+//            progress.setProgressPercent(null);
+//        }
+//
+//        TaskProgress saved = taskProgressRepository.save(progress);
+//        dailySummaryService.recomputeSummaryForToday(userId);
+//
+//        heatMapService.updateHeatmap(userId, today, requestDTO.getCompleted());
+//        return saved;
+//    }
+
     public TaskProgress logProgress(TaskProgressRequestDTO requestDTO) {
 
         String taskId = requestDTO.getTaskId();
@@ -124,6 +213,9 @@ public class TaskProgressService {
         TaskProgress progress =
                 taskProgressRepository.findByUserIdAndDateAndTaskId(userId, today, taskId);
 
+        boolean wasCompleted =
+                progress != null && Boolean.TRUE.equals(progress.getCompletedToday());
+
         if (progress == null) {
             progress = TaskProgress.builder()
                     .userId(userId)
@@ -132,68 +224,72 @@ public class TaskProgressService {
                     .build();
         }
 
-        // QUANTITATIVE TASK
         if (task.getTaskType() == TaskType.QUANTITATIVE) {
 
-            // no value entered → treat as tick done
+            // tick-only completion
             if (valueCompleted == null) {
 
                 progress.setValueCompleted(null);
                 progress.setCompletedToday(true);
                 progress.setProgressPercent(100);
-
-                // don't modify task progress snapshot
-                return taskProgressRepository.save(progress);
             }
+            else {
 
-            // avoid invalid or negative input
-            if (valueCompleted < 0) valueCompleted = 0;
+                if (valueCompleted < 0) valueCompleted = 0;
 
-            progress.setValueCompleted(valueCompleted);
+                progress.setValueCompleted(valueCompleted);
 
-            Integer target = task.getTargetValue();
+                Integer target = task.getTargetValue();
 
-            // avoid divide-by-zero
-            if (target == null || target == 0) {
-                progress.setProgressPercent(null);
-                progress.setCompletedToday(true);
-                return taskProgressRepository.save(progress);
+                if (target == null || target == 0) {
+                    progress.setProgressPercent(null);
+                    progress.setCompletedToday(true);
+                }
+                else {
+
+                    int percent = (int) Math.round(
+                            (valueCompleted * 100.0) / target
+                    );
+
+                    if (percent > 100) percent = 100;
+                    if (percent < 0) percent = 0;
+
+                    progress.setProgressPercent(percent);
+                    progress.setCompletedToday(percent > 0);
+
+                    task.setProgressPercent(percent);
+
+                    if (percent == 100) {
+                        task.setStatus(TaskStatus.COMPLETED);
+                    }
+
+                    taskRepository.save(task);
+                }
             }
-
-
-            int percent = (int) Math.round(
-                    (valueCompleted * 100.0) / target
-            );
-
-            if (percent > 100) percent = 100;
-            if (percent < 0) percent = 0;
-
-            progress.setProgressPercent(percent);
-            progress.setCompletedToday(percent > 0);
-
-            // update task snapshot
-            task.setProgressPercent(percent);
-
-            if (percent == 100) {
-                task.setStatus(TaskStatus.COMPLETED);
-            }
-
-            taskRepository.save(task);
         }
 
-        // BOOLEAN TASK
         else if (task.getTaskType() == TaskType.BOOLEAN) {
             progress.setCompletedToday(true);
-
-            // do NOT force progressPercent if task has no measurable value
             progress.setProgressPercent(null);
         }
 
         TaskProgress saved = taskProgressRepository.save(progress);
+
         dailySummaryService.recomputeSummaryForToday(userId);
+
+        // HEATMAP CONSISTENCY LOGIC
+        boolean isCompleted = Boolean.TRUE.equals(saved.getCompletedToday());
+
+        if (!wasCompleted && isCompleted) {
+            heatMapService.updateHeatmap(userId, today, true);
+        }
+        else if (wasCompleted && !isCompleted) {
+            heatMapService.updateHeatmap(userId, today, false);
+        }
 
         return saved;
     }
+
 
     public TaskProgress markBooleanTask(TaskProgressRequestDTO request) {
 
