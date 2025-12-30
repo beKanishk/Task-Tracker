@@ -70,7 +70,10 @@ public class TaskProgressService {
                     .completedToday(true)
                     .build();
 
-            return taskProgressRepository.save(progress);
+            TaskProgress saved = taskProgressRepository.save(progress);
+            dailySummaryService.recomputeSummaryForToday(userId);
+
+            return saved;
         }
 
         taskProgressRepository.delete(existing);

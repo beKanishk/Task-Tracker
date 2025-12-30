@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -68,5 +69,34 @@ public class DailySummaryService {
 
         return dailySummaryRepository.save(summary);
     }
+
+    public List<DailySummary> getMonthlySummaries(String userId, int year, int month) {
+
+        LocalDate start = LocalDate.of(year, month, 1);
+        LocalDate end = start.plusMonths(1).minusDays(1);
+
+        // fetch only days that actually have activity
+        List<LocalDate> activeDates = taskProgressRepository
+                .findByUserIdAndDateBetween(userId, start, end)
+                .stream()
+                .map(TaskProgress::getDate)
+                .distinct()
+                .sorted()
+                .toList();
+
+        List<DailySummary> summaries = new ArrayList<>();
+
+        for (LocalDate date : activeDates) {
+
+            DailySummary summary = computeDailySummary(userId, date);
+
+            if (summary != null) {
+                summaries.add(summary);
+            }
+        }
+
+        return summaries;
+    }
+
 
 }

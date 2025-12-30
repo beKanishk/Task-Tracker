@@ -11,7 +11,8 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder
 public class TaskRequestDTO {
-
+    private String taskId;
+    private String taskName;
     private String userId;
 
     private String title;
@@ -20,7 +21,6 @@ public class TaskRequestDTO {
     private LocalDate startDate;
     private LocalDate endDate;
 
-    @Nullable
     private Integer targetValue;
     @Nullable
     private String unit;
