@@ -42,6 +42,8 @@ public class TaskService {
                 .targetValue(dto.getTargetValue())
                 .status(TaskStatus.ACTIVE)   // default
                 .createdAt(LocalDate.now())
+                .taskType(dto.getTaskType())
+                .unit(dto.getUnit())
                 .build();
 
         return taskRepository.save(task);
