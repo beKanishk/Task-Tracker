@@ -69,7 +69,7 @@ public class TaskProgressController {
         return taskProgressService.toggleToday(requestDTO);
     }
 
-    @PostMapping("/quantitative/log")
+    @PostMapping("/log")
     public TaskProgressResponseDTO logQuantitativeProgress(
             @RequestBody TaskProgressRequestDTO request
     ) {
@@ -82,7 +82,6 @@ public class TaskProgressController {
                 .completedToday(progress.getCompletedToday())
                 .progressPercent(progress.getProgressPercent())
                 .valueCompleted(progress.getValueCompleted())
-                .taskType("QUANTITATIVE")
                 .completionType(
                         progress.getValueCompleted() == null
                                 ? "TICK_ONLY"
