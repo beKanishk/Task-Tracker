@@ -83,35 +83,84 @@ public class TaskProgressService {
         return null;
     }
 
+//    public List<TaskProgress> markAllTasksCompletedToday(String userId) {
+//        LocalDate today = LocalDate.now();
+//
+//        // Get all tasks for user
+//        List<Task> tasks = taskRepository.findByUserId(userId);
+//        List<TaskProgress> results = new ArrayList<>();
+//
+//        for (Task task : tasks) {
+//            TaskProgress existing =
+//                    taskProgressRepository.findByUserIdAndDateAndTaskId(userId,today, task.getId());
+//
+//            if (existing == null) {
+//                // create new entry
+//                TaskProgress progress = TaskProgress.builder()
+//                        .userId(userId)
+//                        .taskId(task.getId())
+//                        .date(today)
+//                        .completedToday(true)
+//                        .build();
+//
+//                results.add(taskProgressRepository.save(progress));
+//            } else {
+//                // already marked — just return existing
+//                results.add(existing);
+//            }
+//        }
+//
+//        return results;
+//    }
+
+
     public List<TaskProgress> markAllTasksCompletedToday(String userId) {
         LocalDate today = LocalDate.now();
 
-        // Get all tasks for user
         List<Task> tasks = taskRepository.findByUserId(userId);
         List<TaskProgress> results = new ArrayList<>();
 
+        boolean anyTaskMarked = false;
+
         for (Task task : tasks) {
+
             TaskProgress existing =
-                    taskProgressRepository.findByUserIdAndDateAndTaskId(userId,today, task.getId());
+                    taskProgressRepository.findByUserIdAndDateAndTaskId(
+                            userId, today, task.getId()
+                    );
 
-            if (existing == null) {
-                // create new entry
-                TaskProgress progress = TaskProgress.builder()
-                        .userId(userId)
-                        .taskId(task.getId())
-                        .date(today)
-                        .completedToday(true)
-                        .build();
-
-                results.add(taskProgressRepository.save(progress));
-            } else {
-                // already marked — just return existing
+            if (existing != null && Boolean.TRUE.equals(existing.getCompletedToday())) {
                 results.add(existing);
+                continue;
             }
+
+            TaskProgress progress = (existing == null)
+                    ? TaskProgress.builder()
+                    .userId(userId)
+                    .taskId(task.getId())
+                    .date(today)
+                    .build()
+                    : existing;
+
+            progress.setCompletedToday(true);
+            progress.setProgressPercent(null);
+
+            TaskProgress saved = taskProgressRepository.save(progress);
+            results.add(saved);
+
+            heatMapService.updateHeatmap(userId, today, true);
+
+            anyTaskMarked = true;
+        }
+
+        if (anyTaskMarked) {
+            dailySummaryService.recomputeSummaryForToday(userId);
         }
 
         return results;
     }
+
+
 
 //    public TaskProgress logProgress(TaskProgressRequestDTO requestDTO) {
 //
@@ -302,10 +351,13 @@ public class TaskProgressService {
         TaskProgress progress =
                 taskProgressRepository.findByUserIdAndDateAndTaskId(userId, today, taskId);
 
+        boolean wasCompleted = progress != null;
+
         // unmark case
         if (Boolean.FALSE.equals(completed) && progress != null) {
             taskProgressRepository.delete(progress);
             dailySummaryService.recomputeSummaryForToday(userId);
+            heatMapService.updateHeatmap(userId, today, false);
             return null;
         }
 
@@ -324,8 +376,29 @@ public class TaskProgressService {
         TaskProgress saved = taskProgressRepository.save(progress);
         dailySummaryService.recomputeSummaryForToday(userId);
 
+        if (!wasCompleted) {
+            heatMapService.updateHeatmap(userId, today, true);
+        }
+
         return saved;
     }
 
+    public void unmarkAllTasksForToday(String userId) {
+
+        LocalDate today = LocalDate.now();
+
+        List<TaskProgress> todaysEntries =
+                taskProgressRepository.findByUserIdAndDate(userId, today);
+
+        if (todaysEntries.isEmpty()) return;
+
+        for (TaskProgress entry : todaysEntries) {
+
+            taskProgressRepository.delete(entry);
+            heatMapService.updateHeatmap(userId, today, false);
+        }
+
+        dailySummaryService.recomputeSummaryForToday(userId);
+    }
 
 }
