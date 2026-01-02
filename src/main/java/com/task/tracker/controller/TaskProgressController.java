@@ -17,7 +17,6 @@ import java.util.List;
 public class TaskProgressController {
 
     private final TaskProgressService taskProgressService;
-
     /**
      * Mark a single task as completed for today
      */
@@ -73,21 +72,21 @@ public class TaskProgressController {
     public TaskProgressResponseDTO logQuantitativeProgress(
             @RequestBody TaskProgressRequestDTO request
     ) {
-        TaskProgress progress = taskProgressService.logProgress(request);
+        return taskProgressService.logProgress(request);
 
-        return TaskProgressResponseDTO.builder()
-                .taskId(progress.getTaskId())
-                .userId(progress.getUserId())
-                .date(progress.getDate())
-                .completedToday(progress.getCompletedToday())
-                .progressPercent(progress.getProgressPercent())
-                .valueCompleted(progress.getValueCompleted())
-                .completionType(
-                        progress.getValueCompleted() == null
-                                ? "TICK_ONLY"
-                                : "VALUE_LOGGED"
-                )
-                .build();
+//        return TaskProgressResponseDTO.builder()
+//                .taskId(progress.getTaskId())
+//                .userId(progress.getUserId())
+//                .date(progress.getDate())
+//                .completedToday(progress.getCompletedToday())
+//                .progressPercent(progress.getProgressPercent())
+//                .valueCompleted(progress.getValueCompleted())
+//                .completionType(
+//                        progress.getValueCompleted() == null
+//                                ? "TICK_ONLY"
+//                                : "VALUE_LOGGED"
+//                )
+//                .build();
     }
 
 

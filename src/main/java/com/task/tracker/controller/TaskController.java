@@ -16,6 +16,9 @@ public class TaskController {
 
     private final TaskService taskService;
 
+    //get task which are in progress and task which are completed for today or overall and
+    // to change the status of task from ACTIVE to completed or paused
+
     /**
      * Create Task
      */

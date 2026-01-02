@@ -25,9 +25,56 @@ public class DailySummaryService {
     }
 
 
+//    public DailySummary computeDailySummary(String userId, LocalDate date) {
+//
+//        List<TaskProgress> entries = taskProgressRepository.findByUserIdAndDate(userId, date);
+//
+//        if (entries.isEmpty()) {
+//            return null;
+//        }
+//
+//        int totalPercent = 0;
+//        int counted = 0;
+//
+//        int completed = 0;
+//        int inProgress = 0;
+//
+//        for (TaskProgress e : entries) {
+//
+//            Integer percent = e.getProgressPercent();
+//
+//            // BOOLEAN tasks may have null percent — skip from avg
+//            if (percent != null) {
+//                totalPercent += percent;
+//                counted++;
+//            }
+//
+//            if (Boolean.TRUE.equals(e.getCompletedToday())) {
+//                if (percent != null && percent == 100)
+//                    completed++;
+//                else
+//                    inProgress++;
+//            }
+//        }
+//
+//        int avgPercent = counted == 0 ? 0 : (totalPercent / counted);
+//
+//        DailySummary summary = DailySummary.builder()
+//                .userId(userId)
+//                .date(date)
+//                .totalProgressPercent(avgPercent)
+//                .tasksCompleted(completed)
+//                .tasksInProgress(inProgress)
+//                .build();
+//
+//        return dailySummaryRepository.save(summary);
+//    }
+
+
     public DailySummary computeDailySummary(String userId, LocalDate date) {
 
-        List<TaskProgress> entries = taskProgressRepository.findByUserIdAndDate(userId, date);
+        List<TaskProgress> entries =
+                taskProgressRepository.findByUserIdAndDate(userId, date);
 
         if (entries.isEmpty()) {
             return null;
@@ -43,14 +90,20 @@ public class DailySummaryService {
 
             Integer percent = e.getProgressPercent();
 
-            // BOOLEAN tasks may have null percent — skip from avg
-            if (percent != null) {
-                totalPercent += percent;
-                counted++;
+            // BOOLEAN task -> treat as completed when marked
+            if (percent == null) {
+                if (Boolean.TRUE.equals(e.getCompletedToday())) {
+                    completed++;
+                }
+                continue;
             }
 
+            // QUANTITATIVE -> contributes to avg
+            totalPercent += percent;
+            counted++;
+
             if (Boolean.TRUE.equals(e.getCompletedToday())) {
-                if (percent != null && percent == 100)
+                if (percent == 100)
                     completed++;
                 else
                     inProgress++;
@@ -69,6 +122,8 @@ public class DailySummaryService {
 
         return dailySummaryRepository.save(summary);
     }
+
+
 
     public List<DailySummary> getMonthlySummaries(String userId, int year, int month) {
 

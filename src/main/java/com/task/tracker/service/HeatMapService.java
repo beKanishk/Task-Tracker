@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 @Service
 public class HeatMapService {
@@ -84,5 +85,21 @@ public class HeatMapService {
             );
         }
     }
+
+    public Heatmap getOrCreateMonth(String userId, int year, int month) {
+
+        return heatMapRepository
+                .findByUserIdAndYearAndMonth(userId, year, month)
+                .orElseGet(() -> {
+                    Heatmap created = createEmptyHeatmap(userId, year, month);
+                    return heatMapRepository.save(created);
+                });
+    }
+
+    public List<Heatmap> getYearHeatmap(String userId, int year) {
+
+        return heatMapRepository.findByUserIdAndYear(userId, year);
+    }
+
 
 }
