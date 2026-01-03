@@ -1,5 +1,7 @@
 package com.task.tracker.controller;
 
+import com.task.tracker.authentication.service.AuthService;
+import com.task.tracker.dto.UserResponseDTO;
 import com.task.tracker.model.Heatmap;
 import com.task.tracker.service.HeatMapService;
 import lombok.RequiredArgsConstructor;
@@ -15,42 +17,59 @@ import java.util.List;
 public class HeatMapController {
 
     private final HeatMapService heatMapService;
+    private final AuthService authService;
+
+    private String extractUserId(String authHeader) {
+
+        if (authHeader == null || !authHeader.startsWith("Bearer "))
+            throw new RuntimeException("Missing or invalid Authorization header");
+
+        UserResponseDTO user = authService.getUserFromToken(authHeader);
+        return user.getId();
+    }
 
     /**
      * Get heatmap for a specific month
      */
-    @GetMapping("/{userId}/month")
+    @GetMapping("/month")
     public Heatmap getMonthlyHeatmap(
-            @PathVariable String userId,
+            @RequestHeader("Authorization") String authHeader,
             @RequestParam int year,
             @RequestParam int month
     ) {
-        return heatMapService.getOrCreateMonth(userId, year, month);
+        return heatMapService.getOrCreateMonth(
+                extractUserId(authHeader),
+                year,
+                month
+        );
     }
 
     /**
-     * Get heatmap for whole year (list of months)
+     * Get heatmap for whole year
      */
-    @GetMapping("/{userId}/year")
+    @GetMapping("/year")
     public List<Heatmap> getYearHeatmap(
-            @PathVariable String userId,
+            @RequestHeader("Authorization") String authHeader,
             @RequestParam int year
     ) {
-        return heatMapService.getYearHeatmap(userId, year);
+        return heatMapService.getYearHeatmap(
+                extractUserId(authHeader),
+                year
+        );
     }
 
     /**
-     * Get heatmap for date of the day (used for UI quick fetch)
+     * Get heatmap month containing this date
      */
-    @GetMapping("/{userId}/day")
+    @GetMapping("/day")
     public Heatmap getHeatmapForDay(
-            @PathVariable String userId,
+            @RequestHeader("Authorization") String authHeader,
             @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
     ) {
         return heatMapService.getOrCreateMonth(
-                userId,
+                extractUserId(authHeader),
                 date.getYear(),
                 date.getMonthValue()
         );
