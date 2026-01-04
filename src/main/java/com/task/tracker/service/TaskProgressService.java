@@ -395,9 +395,7 @@ public class TaskProgressService {
                     .build();
         }
 
-        // =========================
         // QUANTITATIVE TASK
-        // =========================
         if (task.getTaskType() == TaskType.QUANTITATIVE) {
 
             progress.setValueCompleted(valueCompleted);
@@ -423,9 +421,9 @@ public class TaskProgressService {
                     progress.setProgressPercent(percent);
                     task.setProgressPercent(percent);
 
-                    if (percent == 100) {
-                        task.setStatus(TaskStatus.COMPLETED);
-                    }
+//                    if (percent == 100) {
+//                        task.setStatus(TaskStatus.COMPLETED);
+//                    }
 
                     taskRepository.save(task);
                 }
