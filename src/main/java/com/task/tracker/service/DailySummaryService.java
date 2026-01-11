@@ -77,7 +77,13 @@ public class DailySummaryService {
                 taskProgressRepository.findByUserIdAndDate(userId, date);
 
         if (entries.isEmpty()) {
-            return null;
+            return DailySummary.builder()
+                    .userId(userId)
+                    .date(date)
+                    .totalProgressPercent(0)
+                    .tasksCompleted(0)
+                    .tasksInProgress(0)
+                    .build();
         }
 
         int totalPercent = 0;
