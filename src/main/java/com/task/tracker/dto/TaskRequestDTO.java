@@ -22,7 +22,6 @@ public class TaskRequestDTO {
     private LocalDate endDate;
 
     private Integer targetValue;
-    @Nullable
     private String unit;
 
     private TaskType taskType;

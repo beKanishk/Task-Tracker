@@ -18,6 +18,7 @@ public class TaskResponseDTO {
     private TaskStatus status;
 
     private TaskType taskType;
+    private boolean completedToday;
 
     private Integer targetValue;
     private String unit;

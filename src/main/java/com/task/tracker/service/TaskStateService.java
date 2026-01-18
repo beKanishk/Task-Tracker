@@ -1,6 +1,7 @@
 package com.task.tracker.service;
 
 import com.task.tracker.dto.TaskStateResponse;
+import com.task.tracker.dto.TaskTodayDTO;
 import com.task.tracker.model.Task;
 import com.task.tracker.model.TaskProgress;
 import com.task.tracker.model.TaskStatus;
@@ -10,7 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,44 +31,64 @@ public class TaskStateService {
         List<TaskProgress> todayEntries =
                 taskProgressRepository.findByUserIdAndDate(userId, date);
 
-        // tasks completed today
-        var completedToday = todayEntries.stream()
-                .filter(p -> Boolean.TRUE.equals(p.getCompletedToday()))
-                .map(TaskProgress::getTaskId)
-                .toList();
+        // Map: taskId -> TaskProgress (today)
+//        Map<String, TaskProgress> progressMap = todayEntries.stream()
+//                .collect(Collectors.toMap(
+//                        TaskProgress::getTaskId,
+//                        p -> p
+//                ));
 
-        List<Task> tasksCompletedToday = allTasks.stream()
-                .filter(t -> completedToday.contains(t.getId()))
-                .toList();
+        Map<String, TaskProgress> progressMap =
+                todayEntries.stream()
+                        .collect(Collectors.groupingBy(
+                                TaskProgress::getTaskId,
+                                Collectors.collectingAndThen(
+                                        Collectors.maxBy(Comparator.comparing(TaskProgress::getId)),
+                                        Optional::get
+                                )
+                        ));
 
-        // tasks in progress today
-        List<Task> tasksInProgressToday = allTasks.stream()
-                .filter(t -> !completedToday.contains(t.getId()))
-                .filter(t -> t.getStatus() == TaskStatus.ACTIVE)
-                .toList();
 
-        // overall status buckets
-        List<Task> tasksCompletedOverall = allTasks.stream()
-                .filter(t -> t.getStatus() == TaskStatus.COMPLETED)
-                .toList();
+        List<TaskTodayDTO> completedToday = new ArrayList<>();
+        List<TaskTodayDTO> inProgressToday = new ArrayList<>();
 
-        List<Task> tasksActive = allTasks.stream()
-                .filter(t -> t.getStatus() == TaskStatus.ACTIVE)
-                .toList();
+        for (Task task : allTasks) {
 
-        List<Task> tasksPaused = allTasks.stream()
-                .filter(t -> t.getStatus() == TaskStatus.PAUSED)
-                .toList();
+            if (task.getStatus() != TaskStatus.ACTIVE) continue;
+
+            TaskProgress progress = progressMap.get(task.getId());
+
+            boolean isCompletedToday =
+                    progress != null && Boolean.TRUE.equals(progress.getCompletedToday());
+
+            Integer progressPercent =
+                    progress != null ? progress.getProgressPercent() : null;
+
+            TaskTodayDTO dto = TaskTodayDTO.builder()
+                    .id(task.getId())
+                    .title(task.getTitle())
+                    .taskType(task.getTaskType())
+                    .progressPercent(progressPercent)
+                    .completedToday(isCompletedToday)
+                    .description(task.getDescription())
+                    .target(task.getTargetValue())
+                    .unit(task.getUnit())
+                    .build();
+
+            if (isCompletedToday) {
+                completedToday.add(dto);
+            } else {
+                inProgressToday.add(dto);
+            }
+        }
 
         return TaskStateResponse.builder()
-                .date(date)
-                .completedToday(tasksCompletedToday)
-                .inProgressToday(tasksInProgressToday)
-                .completedOverall(tasksCompletedOverall)
-                .active(tasksActive)
-                .paused(tasksPaused)
+                .inProgressToday(inProgressToday)
+                .completedToday(completedToday)
                 .build();
     }
+
+
 
     /**
      * Change task status

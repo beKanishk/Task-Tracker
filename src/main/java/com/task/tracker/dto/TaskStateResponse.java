@@ -13,8 +13,8 @@ public class TaskStateResponse {
 
     private LocalDate date;
 
-    private List<Task> completedToday;
-    private List<Task> inProgressToday;
+    private List<TaskTodayDTO> completedToday;
+    private List<TaskTodayDTO> inProgressToday;
 
     private List<Task> completedOverall;
     private List<Task> active;
