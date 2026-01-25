@@ -59,14 +59,48 @@ public class StreakService {
 
         boolean forgivenessEnabled = properties.isAllowForgiveness();
         boolean withinMaxGap = missedDays <= properties.getMaxGapDays();
-        boolean canConsumeForgiveness = streak.canUseForgiveness(missedDays);
+        boolean canUseForgiveness = streak.canUseForgiveness(missedDays);
 
-        if (forgivenessEnabled && withinMaxGap && canConsumeForgiveness) {
-            streak.consumeForgiveness(missedDays, today);
+        /*
+         * Do NOT auto-consume forgiveness
+         * Mark it as PENDING and wait for user decision
+         */
+        if (forgivenessEnabled && withinMaxGap && canUseForgiveness) {
+            streak.markForgivenessPending(missedDays);
         } else {
             streak.reset(today, properties.getForgivenessAllowed());
         }
 
+        repository.save(streak);
+    }
+
+    /**
+     * User ACCEPTS forgiveness
+     */
+    public void acceptForgiveness(String userId, LocalDate today) {
+        UserStreak streak = repository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("Streak not found"));
+
+        if (!streak.isForgivenessDecisionRequired()) {
+            return;
+        }
+
+        streak.consumeForgiveness(today);
+        repository.save(streak);
+    }
+
+    /**
+     * User DECLINES forgiveness
+     */
+    public void declineForgiveness(String userId, LocalDate today) {
+        UserStreak streak = repository.findById(userId)
+                .orElseThrow(() -> new IllegalStateException("Streak not found"));
+
+        if (!streak.isForgivenessDecisionRequired()) {
+            return;
+        }
+
+        streak.reset(today, properties.getForgivenessAllowed());
         repository.save(streak);
     }
 

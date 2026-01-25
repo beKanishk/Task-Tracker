@@ -25,11 +25,13 @@ public class UserStreak {
     private LocalDate lastActiveDate;
     private LocalDate lastBrokenDate;
 
-    /** How many forgiveness days already used in current streak */
+    /** Forgiveness usage */
     private int forgivenessUsed;
-
-    /** How many forgiveness days are allowed per streak */
     private int forgivenessAllowed;
+
+    /** NEW: forgiveness decision state */
+    private boolean forgivenessPending;
+    private int pendingMissedDays;
 
     /* ======================================================
        DOMAIN METHODS
@@ -41,8 +43,12 @@ public class UserStreak {
         this.longestStreak = 1;
         this.lastActiveDate = today;
         this.lastBrokenDate = null;
+
         this.forgivenessUsed = 0;
         this.forgivenessAllowed = forgivenessAllowed;
+
+        this.forgivenessPending = false;
+        this.pendingMissedDays = 0;
     }
 
     /** Normal consecutive day */
@@ -52,23 +58,36 @@ public class UserStreak {
         this.lastActiveDate = today;
     }
 
-    /** Consume forgiveness for missed days */
-    public void consumeForgiveness(int missedDays, LocalDate today) {
-        this.forgivenessUsed += missedDays;
-        this.lastActiveDate = today;
+    /** Mark forgiveness as pending (WAIT for user decision) */
+    public void markForgivenessPending(int missedDays) {
+        this.forgivenessPending = true;
+        this.pendingMissedDays = missedDays;
     }
 
-    /** Reset streak completely */
+    /** User ACCEPTS forgiveness */
+    public void consumeForgiveness(LocalDate today) {
+        this.forgivenessUsed += this.pendingMissedDays;
+        this.lastActiveDate = today;
+
+        clearPendingForgiveness();
+    }
+
+    /** User DECLINES forgiveness → streak breaks */
     public void reset(LocalDate today, int forgivenessAllowed) {
         this.lastBrokenDate = today.minusDays(1);
+
+        // preserve longest streak BEFORE reset
+        this.longestStreak = Math.max(this.longestStreak, this.currentStreak);
 
         this.currentStreak = 1;
         this.forgivenessUsed = 0;
         this.forgivenessAllowed = forgivenessAllowed;
 
         this.lastActiveDate = today;
-        this.longestStreak = Math.max(this.longestStreak, this.currentStreak);
+
+        clearPendingForgiveness();
     }
+
 
     /* ======================================================
        HELPERS
@@ -78,7 +97,16 @@ public class UserStreak {
         return forgivenessUsed + missedDays <= forgivenessAllowed;
     }
 
+    public boolean isForgivenessDecisionRequired() {
+        return forgivenessPending;
+    }
+
     public boolean isPerfectStreak() {
         return forgivenessUsed == 0;
+    }
+
+    private void clearPendingForgiveness() {
+        this.forgivenessPending = false;
+        this.pendingMissedDays = 0;
     }
 }
