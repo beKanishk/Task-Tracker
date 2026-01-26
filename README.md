@@ -12,7 +12,7 @@ A robust backend for a habit & task tracking application built with **Spring Boo
 - Pause / resume tasks
 - Edit task details (title, description, target, unit)
 
-### 📊 Daily Progress Tracking
+### Daily Progress Tracking
 - Log task completion per day
 - Undo task logs
 - Prevent duplicate logs for the same task/day
@@ -65,12 +65,12 @@ This design ensures:
 
 ---
 
-## 📁 Project Structure
-src/main/java/com/task/tracker
-├── authentication # JWT auth & security
-├── controller # REST controllers
-├── service # Business logic
-├── repository # MongoDB repositories
-├── model # Domain models
+## Project Structure
+src/main/java/com/task/tracker  
+├── authentication # JWT auth & security  
+├── controller # REST controllers  
+├── service # Business logic  
+├── repository # MongoDB repositories  
+├── model # Domain models  
 ├── dto # Request/response DTOs
 ├── process # Config & properties (streak rules)
