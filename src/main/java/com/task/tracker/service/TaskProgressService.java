@@ -32,9 +32,6 @@ public class TaskProgressService {
     @Autowired
     private HeatMapService heatMapService;
 
-    @Autowired
-    private StreakService streakService;
-
     public TaskProgress markCompletedToday(String userId, String taskId){
         LocalDate today = LocalDate.now();
 
@@ -592,10 +589,6 @@ public class TaskProgressService {
         TaskProgress saved = taskProgressRepository.save(progress);
 
         dailySummaryService.recomputeSummaryForToday(userId);
-
-        if (!wasCompleted && Boolean.TRUE.equals(saved.getCompletedToday())) {
-            streakService.updateStreak(userId, LocalDate.now());
-        }
 
         /* ======================= HEATMAP ======================= */
         boolean isCompleted = Boolean.TRUE.equals(saved.getCompletedToday());
