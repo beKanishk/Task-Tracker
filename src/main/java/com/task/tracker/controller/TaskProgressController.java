@@ -1,9 +1,8 @@
 package com.task.tracker.controller;
 
-import com.task.tracker.authentication.service.AuthService;
+import com.task.tracker.authentication.service.AuthHelper;
 import com.task.tracker.dto.TaskProgressRequestDTO;
 import com.task.tracker.dto.TaskProgressResponseDTO;
-import com.task.tracker.dto.UserResponseDTO;
 import com.task.tracker.model.TaskProgress;
 import com.task.tracker.service.TaskProgressService;
 import lombok.RequiredArgsConstructor;
@@ -19,16 +18,7 @@ import java.util.List;
 public class TaskProgressController {
 
     private final TaskProgressService taskProgressService;
-    private final AuthService authService;
-
-    private String extractUserId(String authHeader) {
-
-        if (authHeader == null || !authHeader.startsWith("Bearer "))
-            throw new RuntimeException("Missing or invalid Authorization header");
-
-        UserResponseDTO user = authService.getUserFromToken(authHeader);
-        return user.getId();
-    }
+    private final AuthHelper authHelper;
 
     /**
      * Mark BOOLEAN task (tick / untick)
@@ -38,8 +28,21 @@ public class TaskProgressController {
             @RequestHeader("Authorization") String authHeader,
             @RequestBody TaskProgressRequestDTO request
     ) {
-        request.setUserId(extractUserId(authHeader));
+        request.setUserId(authHelper.extractUserId(authHeader));
         TaskProgress progress = taskProgressService.markBooleanTask(request);
+
+        // untick path — progress record was deleted
+        if (progress == null) {
+            return TaskProgressResponseDTO.builder()
+                    .taskId(request.getTaskId())
+                    .userId(request.getUserId())
+                    .date(LocalDate.now())
+                    .completedToday(false)
+                    .progressPercent(null)
+                    .taskType("BOOLEAN")
+                    .completionType("TICK_ONLY")
+                    .build();
+        }
 
         return TaskProgressResponseDTO.builder()
                 .taskId(progress.getTaskId())
@@ -60,7 +63,7 @@ public class TaskProgressController {
             @RequestHeader("Authorization") String authHeader,
             @RequestBody TaskProgressRequestDTO request
     ) {
-        request.setUserId(extractUserId(authHeader));
+        request.setUserId(authHelper.extractUserId(authHeader));
         return taskProgressService.logProgress(request);
     }
 
@@ -72,7 +75,7 @@ public class TaskProgressController {
             @RequestHeader("Authorization") String authHeader,
             @RequestBody TaskProgressRequestDTO requestDTO
     ) {
-        requestDTO.setUserId(extractUserId(authHeader));
+        requestDTO.setUserId(authHelper.extractUserId(authHeader));
         return taskProgressService.toggleToday(requestDTO);
     }
 
@@ -85,7 +88,7 @@ public class TaskProgressController {
     }
 
     /**
-     * All progress entries for today
+     * All progress entries for a given date
      */
     @GetMapping("/day")
     public List<TaskProgress> getUserDayEntries(
@@ -95,7 +98,7 @@ public class TaskProgressController {
             LocalDate date
     ) {
         return taskProgressService.getUserDayEntries(
-                extractUserId(authHeader),
+                authHelper.extractUserId(authHeader),
                 date
         );
     }
@@ -108,7 +111,7 @@ public class TaskProgressController {
             @RequestHeader("Authorization") String authHeader
     ) {
         return taskProgressService.markAllTasksCompletedToday(
-                extractUserId(authHeader)
+                authHelper.extractUserId(authHeader)
         );
     }
 }
