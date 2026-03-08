@@ -4,8 +4,10 @@ import com.task.tracker.authentication.service.AuthHelper;
 import com.task.tracker.dto.TaskRequestDTO;
 import com.task.tracker.dto.TaskResponseDTO;
 import com.task.tracker.model.Task;
+import com.task.tracker.model.TaskStatus;
 import com.task.tracker.service.TaskService;
 import com.task.tracker.utils.TaskActionException;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +24,7 @@ public class TaskController {
     @PostMapping
     public TaskResponseDTO createTask(
             @RequestHeader("Authorization") String authHeader,
-            @RequestBody TaskRequestDTO dto
+            @Valid @RequestBody TaskRequestDTO dto
     ) {
         dto.setUserId(authHelper.extractUserId(authHeader));
         return taskService.createTask(dto);
@@ -35,9 +37,13 @@ public class TaskController {
 
     @GetMapping
     public List<Task> getMyTasks(
-            @RequestHeader("Authorization") String authHeader
+            @RequestHeader("Authorization") String authHeader,
+            @RequestParam(required = false) TaskStatus status
     ) {
-        return taskService.findByUserId(authHelper.extractUserId(authHeader));
+        String userId = authHelper.extractUserId(authHeader);
+        if (status != null)
+            return taskService.findByUserIdAndStatus(userId, status);
+        return taskService.findByUserId(userId);
     }
 
     @PutMapping

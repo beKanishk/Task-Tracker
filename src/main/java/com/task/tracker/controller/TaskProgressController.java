@@ -5,6 +5,7 @@ import com.task.tracker.dto.TaskProgressRequestDTO;
 import com.task.tracker.dto.TaskProgressResponseDTO;
 import com.task.tracker.model.TaskProgress;
 import com.task.tracker.service.TaskProgressService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
@@ -26,7 +27,7 @@ public class TaskProgressController {
     @PostMapping("/boolean/mark")
     public TaskProgressResponseDTO markBooleanTask(
             @RequestHeader("Authorization") String authHeader,
-            @RequestBody TaskProgressRequestDTO request
+            @Valid @RequestBody TaskProgressRequestDTO request
     ) {
         request.setUserId(authHelper.extractUserId(authHeader));
         TaskProgress progress = taskProgressService.markBooleanTask(request);
@@ -61,7 +62,7 @@ public class TaskProgressController {
     @PostMapping("/log")
     public TaskProgressResponseDTO logQuantitativeProgress(
             @RequestHeader("Authorization") String authHeader,
-            @RequestBody TaskProgressRequestDTO request
+            @Valid @RequestBody TaskProgressRequestDTO request
     ) {
         request.setUserId(authHelper.extractUserId(authHeader));
         return taskProgressService.logProgress(request);
@@ -73,7 +74,7 @@ public class TaskProgressController {
     @PostMapping("/toggle-today")
     public TaskProgress toggleToday(
             @RequestHeader("Authorization") String authHeader,
-            @RequestBody TaskProgressRequestDTO requestDTO
+            @Valid @RequestBody TaskProgressRequestDTO requestDTO
     ) {
         requestDTO.setUserId(authHelper.extractUserId(authHeader));
         return taskProgressService.toggleToday(requestDTO);
@@ -83,8 +84,11 @@ public class TaskProgressController {
      * Get history for a specific task
      */
     @GetMapping("/task/{taskId}/history")
-    public List<TaskProgress> getTaskHistory(@PathVariable String taskId) {
-        return taskProgressService.getTaskHistory(taskId);
+    public List<TaskProgress> getTaskHistory(
+            @RequestHeader("Authorization") String authHeader,
+            @PathVariable String taskId
+    ) {
+        return taskProgressService.getTaskHistory(authHelper.extractUserId(authHeader), taskId);
     }
 
     /**

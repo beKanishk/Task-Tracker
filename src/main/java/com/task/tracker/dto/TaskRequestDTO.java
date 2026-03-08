@@ -1,7 +1,9 @@
 package com.task.tracker.dto;
 
 import com.task.tracker.model.TaskType;
-import jakarta.annotation.Nullable;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -15,6 +17,7 @@ public class TaskRequestDTO {
     private String taskName;
     private String userId;
 
+    @NotBlank(message = "Title is required")
     private String title;
     private String description;
 
@@ -24,5 +27,6 @@ public class TaskRequestDTO {
     private Integer targetValue;
     private String unit;
 
+    @NotNull(message = "Task type is required")
     private TaskType taskType;
 }

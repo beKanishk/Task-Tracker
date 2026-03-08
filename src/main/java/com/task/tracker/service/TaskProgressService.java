@@ -55,7 +55,11 @@ public class TaskProgressService {
         return taskProgressRepository.save(progress);
     }
 
-    public List<TaskProgress> getTaskHistory(String taskId) {
+    public List<TaskProgress> getTaskHistory(String userId, String taskId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
+        if (!task.getUserId().equals(userId))
+            throw new TaskActionException("Not authorized to view this task's history");
         return taskProgressRepository.findByTaskId(taskId);
     }
 
