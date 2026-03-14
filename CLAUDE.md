@@ -50,7 +50,7 @@ com.task.tracker
 
 Public endpoints: `/auth/register`, `/auth/token`, `/auth/validate`, `/auth/role`. Everything else requires a JWT Bearer token. `JwtAuthFilter` runs before `UsernamePasswordAuthenticationFilter`. CORS is configured for `http://localhost:5173` only.
 
-Controllers extract `userId` from the JWT via `AuthService.getUserFromToken(authHeader)` — a common pattern repeated across controllers.
+Controllers extract `userId` from the JWT via `AuthHelper.extractUserId(authHeader)` — a thin wrapper around `AuthService.getUserFromToken()` used across all protected controllers.
 
 ### REST API Endpoints
 
