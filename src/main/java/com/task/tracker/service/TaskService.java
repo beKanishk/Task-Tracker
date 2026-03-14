@@ -4,6 +4,7 @@ import com.task.tracker.dto.TaskRequestDTO;
 import com.task.tracker.dto.TaskResponseDTO;
 import com.task.tracker.model.Task;
 import com.task.tracker.model.TaskStatus;
+import com.task.tracker.repository.TaskProgressRepository;
 import com.task.tracker.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,8 +19,15 @@ public class TaskService {
     @Autowired
     private TaskRepository taskRepository;
 
+    @Autowired
+    private TaskProgressRepository taskProgressRepository;
+
     public List<Task> findByUserId(String userId) {
         return taskRepository.findByUserId(userId);
+    }
+
+    public List<Task> findByUserIdAndStatus(String userId, TaskStatus status) {
+        return taskRepository.findByUserIdAndStatus(userId, status);
     }
 
     public Task findById(String id) {
@@ -32,7 +40,7 @@ public class TaskService {
         }
     }
 
-    public Task createTask(TaskRequestDTO dto) {
+    public TaskResponseDTO createTask(TaskRequestDTO dto) {
         Task task = Task.builder()
                 .userId(dto.getUserId())
                 .title(dto.getTitle())
@@ -40,13 +48,26 @@ public class TaskService {
                 .startDate(dto.getStartDate())
                 .endDate(dto.getEndDate())
                 .targetValue(dto.getTargetValue())
-                .status(TaskStatus.ACTIVE)   // default
+                .status(TaskStatus.ACTIVE)
                 .createdAt(LocalDate.now())
                 .taskType(dto.getTaskType())
                 .unit(dto.getUnit())
                 .build();
 
-        return taskRepository.save(task);
+        Task saved = taskRepository.save(task);
+
+        return TaskResponseDTO.builder()
+                .id(saved.getId())
+                .userId(saved.getUserId())
+                .title(saved.getTitle())
+                .description(saved.getDescription())
+                .status(saved.getStatus())
+                .taskType(saved.getTaskType())
+                .targetValue(saved.getTargetValue())
+                .unit(saved.getUnit())
+                .startDate(saved.getStartDate())
+                .endDate(saved.getEndDate())
+                .build();
     }
 
     public List<String> findDistinctUserIds() {
@@ -86,6 +107,7 @@ public class TaskService {
         Task editedTask = taskRepository.save(task);
 
         return TaskResponseDTO.builder()
+                .id(editedTask.getId())
                 .userId(editedTask.getUserId())
                 .title(editedTask.getTitle())
                 .description(editedTask.getDescription())
@@ -99,6 +121,7 @@ public class TaskService {
     }
 
     public void deleteTask(String id) {
+        taskProgressRepository.deleteByTaskId(id);
         taskRepository.deleteById(id);
     }
 }

@@ -1,7 +1,6 @@
 package com.task.tracker.controller;
 
-import com.task.tracker.authentication.service.AuthService;
-import com.task.tracker.dto.UserResponseDTO;
+import com.task.tracker.authentication.service.AuthHelper;
 import com.task.tracker.model.Heatmap;
 import com.task.tracker.service.HeatMapService;
 import lombok.RequiredArgsConstructor;
@@ -17,20 +16,8 @@ import java.util.List;
 public class HeatMapController {
 
     private final HeatMapService heatMapService;
-    private final AuthService authService;
+    private final AuthHelper authHelper;
 
-    private String extractUserId(String authHeader) {
-
-        if (authHeader == null || !authHeader.startsWith("Bearer "))
-            throw new RuntimeException("Missing or invalid Authorization header");
-
-        UserResponseDTO user = authService.getUserFromToken(authHeader);
-        return user.getId();
-    }
-
-    /**
-     * Get heatmap for a specific month
-     */
     @GetMapping("/month")
     public Heatmap getMonthlyHeatmap(
             @RequestHeader("Authorization") String authHeader,
@@ -38,29 +25,23 @@ public class HeatMapController {
             @RequestParam int month
     ) {
         return heatMapService.getOrCreateMonth(
-                extractUserId(authHeader),
+                authHelper.extractUserId(authHeader),
                 year,
                 month
         );
     }
 
-    /**
-     * Get heatmap for whole year
-     */
     @GetMapping("/year")
     public List<Heatmap> getYearHeatmap(
             @RequestHeader("Authorization") String authHeader,
             @RequestParam int year
     ) {
         return heatMapService.getYearHeatmap(
-                extractUserId(authHeader),
+                authHelper.extractUserId(authHeader),
                 year
         );
     }
 
-    /**
-     * Get heatmap month containing this date
-     */
     @GetMapping("/day")
     public Heatmap getHeatmapForDay(
             @RequestHeader("Authorization") String authHeader,
@@ -69,7 +50,7 @@ public class HeatMapController {
             LocalDate date
     ) {
         return heatMapService.getOrCreateMonth(
-                extractUserId(authHeader),
+                authHelper.extractUserId(authHeader),
                 date.getYear(),
                 date.getMonthValue()
         );

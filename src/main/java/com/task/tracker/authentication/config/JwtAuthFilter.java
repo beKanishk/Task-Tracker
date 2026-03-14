@@ -150,10 +150,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
         catch (Exception ex) {
 
-            // 🔴 Log full exception stack trace
+            //Log full exception stack trace
             log.error("JWT authentication failed: {}", ex.getMessage(), ex);
 
-            // 🔴 Return safe structured error response
+            //Return safe structured error response
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json");
 

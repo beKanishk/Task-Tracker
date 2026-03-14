@@ -4,7 +4,10 @@ import com.task.tracker.model.UserStreak;
 import com.task.tracker.process.StreakProperties;
 import com.task.tracker.repository.UserStreakRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -19,6 +22,8 @@ public class StreakService {
     /**
      * Call this ONLY when user has at least one completed task today
      */
+    @Transactional
+    @CacheEvict(value = "streaks", key = "#userId")
     public void updateStreak(String userId, LocalDate today) {
 
         UserStreak streak = repository.findById(userId)
@@ -77,6 +82,8 @@ public class StreakService {
     /**
      * User ACCEPTS forgiveness
      */
+    @Transactional
+    @CacheEvict(value = "streaks", key = "#userId")
     public void acceptForgiveness(String userId, LocalDate today) {
         UserStreak streak = repository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("Streak not found"));
@@ -92,6 +99,8 @@ public class StreakService {
     /**
      * User DECLINES forgiveness
      */
+    @Transactional
+    @CacheEvict(value = "streaks", key = "#userId")
     public void declineForgiveness(String userId, LocalDate today) {
         UserStreak streak = repository.findById(userId)
                 .orElseThrow(() -> new IllegalStateException("Streak not found"));
@@ -105,8 +114,9 @@ public class StreakService {
     }
 
     /**
-     * Read-only API for UI / dashboard
+     * Read-only API for UI / dashboard. Cached per userId; evicted on any streak mutation.
      */
+    @Cacheable(value = "streaks", key = "#userId")
     public UserStreak getStreak(String userId) {
         return repository.findById(userId)
                 .orElseGet(() -> UserStreak.builder()

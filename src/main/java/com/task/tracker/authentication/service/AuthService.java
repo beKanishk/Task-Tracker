@@ -9,6 +9,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -30,6 +32,7 @@ public class AuthService {
                 .name(dto.getName())
                 .password(passwordEncoder.encode(dto.getPassword()))
                 .roles(List.of("USER"))
+                .createdAt(LocalDate.now())
                 .build();
 
 //        user.setRoles(List.of("MESSAGE_READER"));
@@ -80,6 +83,10 @@ public class AuthService {
     }
 
     public String generateToken(String username) throws Exception {
+        userRepository.findByUserName(username).ifPresent(user -> {
+            user.setLastLogin(LocalDateTime.now());
+            userRepository.save(user);
+        });
         return jwtService.generateToken(username);
     }
 

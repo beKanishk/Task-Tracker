@@ -3,7 +3,7 @@ package com.task.tracker.authentication.controller;
 import com.task.tracker.authentication.service.AuthService;
 import com.task.tracker.authentication.dto.AuthRequest;
 import com.task.tracker.dto.UserRequestDTO;
-import com.task.tracker.model.User;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
+
     @Autowired
     private AuthService authService;
 
@@ -22,13 +23,15 @@ public class AuthController {
     private AuthenticationManager authenticationManager;
 
     @PostMapping("/register")
-    public String addNewUser(@RequestBody UserRequestDTO user) {
+    public String addNewUser(@Valid @RequestBody UserRequestDTO user) {
         return authService.saveUser(user);
     }
 
     @PostMapping("/token")
-    public String getToken(@RequestBody AuthRequest authRequest) throws Exception {
-        Authentication authenticate = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword()));
+    public String getToken(@Valid @RequestBody AuthRequest authRequest) throws Exception {
+        Authentication authenticate = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword())
+        );
         if (authenticate.isAuthenticated()) {
             return authService.generateToken(authRequest.getUsername());
         } else {
@@ -36,35 +39,10 @@ public class AuthController {
         }
     }
 
-//    @PostMapping("/token")
-//    public String getToken(@RequestBody AuthRequest authRequest) throws Exception {
-//
-//        try {
-//            Authentication auth =
-//                    authenticationManager.authenticate(
-//                            new UsernamePasswordAuthenticationToken(
-//                                    authRequest.getUsername(),
-//                                    authRequest.getPassword()
-//                            )
-//                    );
-//
-//            if (auth.isAuthenticated()) {
-//                return authService.generateToken(authRequest.getUsername());
-//            }
-//
-//        } catch (Exception e) {
-//            e.printStackTrace();   // TEMP logging
-//        }
-//
-//        throw new RuntimeException("Invalid login credentials");
-//    }
-
-
     @GetMapping("/validate")
     public String validateToken(@RequestParam("token") String token) {
-        if(authService.validateToken(token))
+        if (authService.validateToken(token))
             return "Token is valid";
-
         return "Invalid Token";
     }
 
@@ -75,7 +53,6 @@ public class AuthController {
 
     @PutMapping("/remove/role")
     public ResponseEntity<String> removeUserRole(@RequestParam("username") String username, @RequestParam("role") String role) {
-        String response = authService.updateUserRole(username, role);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return new ResponseEntity<>(authService.updateUserRole(username, role), HttpStatus.OK);
     }
 }
