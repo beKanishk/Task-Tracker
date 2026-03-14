@@ -1,6 +1,6 @@
 package com.task.tracker.controller;
 
-import com.task.tracker.authentication.service.AuthService;
+import com.task.tracker.authentication.service.AuthHelper;
 import com.task.tracker.model.UserFatigue;
 import com.task.tracker.service.FatigueService;
 import lombok.RequiredArgsConstructor;
@@ -14,24 +14,19 @@ import java.time.LocalDate;
 public class FatigueController {
 
     private final FatigueService fatigueService;
-    private final AuthService authService;
+    private final AuthHelper authHelper;
 
     @GetMapping
     public UserFatigue getFatigue(
             @RequestHeader("Authorization") String token
     ) {
-        String userId = authService.getUserFromToken(token).getId();
-        return fatigueService.getOrEvaluate(userId, LocalDate.now());
+        return fatigueService.getOrEvaluate(authHelper.extractUserId(token), LocalDate.now());
     }
 
-    /**
-     * Force recompute
-     */
     @PostMapping("/recompute")
     public UserFatigue recompute(
             @RequestHeader("Authorization") String token
     ) {
-        String userId = authService.getUserFromToken(token).getId();
-        return fatigueService.evaluateFatigue(userId, LocalDate.now());
+        return fatigueService.evaluateFatigue(authHelper.extractUserId(token), LocalDate.now());
     }
 }

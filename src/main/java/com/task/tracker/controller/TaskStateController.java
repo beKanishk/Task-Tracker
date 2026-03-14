@@ -1,10 +1,12 @@
 package com.task.tracker.controller;
 
-import com.task.tracker.authentication.service.AuthService;
+import com.task.tracker.authentication.service.AuthHelper;
 import com.task.tracker.dto.TaskStateResponse;
 import com.task.tracker.model.Task;
 import com.task.tracker.model.TaskStatus;
+import com.task.tracker.service.TaskService;
 import com.task.tracker.service.TaskStateService;
+import com.task.tracker.utils.TaskActionException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
@@ -17,21 +19,15 @@ import java.time.LocalDate;
 public class TaskStateController {
 
     private final TaskStateService taskStateService;
-    private final AuthService authService;
+    private final TaskService taskService;
+    private final AuthHelper authHelper;
 
-    private String extractUserId(String token) {
-        return authService.getUserFromToken(token).getId();
-    }
-
-    /**
-     * Get task status summary
-     */
     @GetMapping("/today")
     public TaskStateResponse getTodayState(
             @RequestHeader("Authorization") String token
     ) {
         return taskStateService.getUserTaskState(
-                extractUserId(token),
+                authHelper.extractUserId(token),
                 LocalDate.now()
         );
     }
@@ -43,20 +39,21 @@ public class TaskStateController {
             LocalDate date
     ) {
         return taskStateService.getUserTaskState(
-                extractUserId(token),
+                authHelper.extractUserId(token),
                 date
         );
     }
 
-    /**
-     * Update task status
-     */
     @PutMapping("/{taskId}/status")
     public Task updateTaskStatus(
+            @RequestHeader("Authorization") String token,
             @PathVariable String taskId,
             @RequestParam TaskStatus status
     ) {
+        String userId = authHelper.extractUserId(token);
+        Task task = taskService.findById(taskId);
+        if (!task.getUserId().equals(userId))
+            throw new TaskActionException("Not authorized to update this task");
         return taskStateService.updateTaskStatus(taskId, status);
     }
 }
-

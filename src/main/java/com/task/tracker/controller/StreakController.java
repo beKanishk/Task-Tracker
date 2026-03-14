@@ -1,6 +1,6 @@
 package com.task.tracker.controller;
 
-import com.task.tracker.authentication.service.AuthService;
+import com.task.tracker.authentication.service.AuthHelper;
 import com.task.tracker.model.UserStreak;
 import com.task.tracker.service.StreakService;
 import lombok.RequiredArgsConstructor;
@@ -14,35 +14,26 @@ import java.time.LocalDate;
 public class StreakController {
 
     private final StreakService streakService;
-    private final AuthService authService;
-
-    /* ================= READ STREAK ================= */
+    private final AuthHelper authHelper;
 
     @GetMapping
     public UserStreak getStreak(
             @RequestHeader("Authorization") String token
     ) {
-        String userId = authService.getUserFromToken(token).getId();
-        return streakService.getStreak(userId);
+        return streakService.getStreak(authHelper.extractUserId(token));
     }
-
-    /* ================= ACCEPT FORGIVENESS ================= */
 
     @PostMapping("/forgiveness/accept")
     public void acceptForgiveness(
             @RequestHeader("Authorization") String token
     ) {
-        String userId = authService.getUserFromToken(token).getId();
-        streakService.acceptForgiveness(userId, LocalDate.now());
+        streakService.acceptForgiveness(authHelper.extractUserId(token), LocalDate.now());
     }
-
-    /* ================= DECLINE FORGIVENESS ================= */
 
     @PostMapping("/forgiveness/decline")
     public void declineForgiveness(
             @RequestHeader("Authorization") String token
     ) {
-        String userId = authService.getUserFromToken(token).getId();
-        streakService.declineForgiveness(userId, LocalDate.now());
+        streakService.declineForgiveness(authHelper.extractUserId(token), LocalDate.now());
     }
 }
