@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -67,10 +68,20 @@ public class AdminService {
     }
 
     public List<AdminUserDTO> getUsers() {
+        // Bulk-fetch everything in 4 queries total, then join in memory
+        Map<String, Long> taskCountByUser = taskRepository.findAll()
+                .stream().collect(Collectors.groupingBy(
+                        t -> t.getUserId(), Collectors.counting()));
+
+        Map<String, UserStreak> streakByUser = userStreakRepository.findAll()
+                .stream().collect(Collectors.toMap(UserStreak::getUserId, Function.identity()));
+
+        Map<String, UserFatigue> fatigueByUser = userFatigueRepository.findAll()
+                .stream().collect(Collectors.toMap(UserFatigue::getUserId, Function.identity()));
+
         return userRepository.findAllByOrderByLastLoginDesc().stream().map(user -> {
-            long taskCount = taskRepository.findByUserId(user.getId()).size();
-            UserStreak streak = userStreakRepository.findById(user.getId()).orElse(null);
-            UserFatigue fatigue = userFatigueRepository.findByUserId(user.getId()).orElse(null);
+            UserStreak streak = streakByUser.get(user.getId());
+            UserFatigue fatigue = fatigueByUser.get(user.getId());
 
             return AdminUserDTO.builder()
                     .userId(user.getId())
@@ -80,7 +91,7 @@ public class AdminService {
                     .roles(user.getRoles())
                     .createdAt(user.getCreatedAt())
                     .lastLogin(user.getLastLogin())
-                    .taskCount(taskCount)
+                    .taskCount(taskCountByUser.getOrDefault(user.getId(), 0L))
                     .currentStreak(streak != null ? streak.getCurrentStreak() : 0)
                     .fatigueLevel(fatigue != null ? fatigue.getLevel().name() : "N/A")
                     .lastActiveDate(streak != null ? streak.getLastActiveDate() : null)
