@@ -41,7 +41,7 @@ public class AuthConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> {})
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/register", "/auth/token", "/auth/validate", "/auth/role").permitAll()
+                        .requestMatchers("/auth/register", "/auth/token", "/auth/validate", "/auth/role", "/health").permitAll()
                         .anyRequest().authenticated()
                 );
         http.authenticationProvider(authenticationProvider);
