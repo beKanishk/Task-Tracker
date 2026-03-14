@@ -14,6 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -33,24 +34,31 @@ public class AdminService {
         LocalDateTime startOfDay = today.atStartOfDay();
         LocalDateTime endOfDay = today.atTime(23, 59, 59);
 
-        long activeToday = taskProgressRepository.findByDate(today)
-                .stream().map(TaskProgress::getUserId).distinct().count();
+        // Single projected query for 7-day progress (userId + date only, no full documents)
+        List<TaskProgress> weekProgress = taskProgressRepository.findUserIdsByDateBetween(today.minusDays(6), today);
+        long activeToday    = weekProgress.stream().filter(p -> p.getDate().equals(today)).map(TaskProgress::getUserId).distinct().count();
+        long activeThisWeek = weekProgress.stream().map(TaskProgress::getUserId).distinct().count();
 
-        long activeThisWeek = taskProgressRepository.findByDateBetween(today.minusDays(6), today)
-                .stream().map(TaskProgress::getUserId).distinct().count();
+        // Run all remaining DB calls in parallel
+        CompletableFuture<Long> totalUsersCF = CompletableFuture.supplyAsync(userRepository::count);
+        CompletableFuture<Long> newUsersTodayCF = CompletableFuture.supplyAsync(() -> userRepository.countByCreatedAt(today));
+        CompletableFuture<Long> loggedInTodayCF = CompletableFuture.supplyAsync(() -> userRepository.countByLastLoginBetween(startOfDay, endOfDay));
+        CompletableFuture<Long> totalTasksCF = CompletableFuture.supplyAsync(taskRepository::count);
+        CompletableFuture<Long> tasksCreatedCF = CompletableFuture.supplyAsync(() -> taskRepository.countByCreatedAt(today));
+        CompletableFuture<Map<String, Long>> feedbackCF = CompletableFuture.supplyAsync(() ->
+                feedbackRepository.findAll().stream().collect(Collectors.groupingBy(Feedback::getType, Collectors.counting())));
 
-        Map<String, Long> feedbackByType = feedbackRepository.findAll()
-                .stream().collect(Collectors.groupingBy(Feedback::getType, Collectors.counting()));
+        CompletableFuture.allOf(totalUsersCF, newUsersTodayCF, loggedInTodayCF, totalTasksCF, tasksCreatedCF, feedbackCF).join();
 
         return AdminStatsDTO.builder()
-                .totalUsers(userRepository.count())
-                .newUsersToday(userRepository.countByCreatedAt(today))
-                .loggedInToday(userRepository.countByLastLoginBetween(startOfDay, endOfDay))
+                .totalUsers(totalUsersCF.join())
+                .newUsersToday(newUsersTodayCF.join())
+                .loggedInToday(loggedInTodayCF.join())
                 .activeToday(activeToday)
                 .activeThisWeek(activeThisWeek)
-                .totalTasks(taskRepository.count())
-                .tasksCreatedToday(taskRepository.countByCreatedAt(today))
-                .feedbackByType(feedbackByType)
+                .totalTasks(totalTasksCF.join())
+                .tasksCreatedToday(tasksCreatedCF.join())
+                .feedbackByType(feedbackCF.join())
                 .build();
     }
 
