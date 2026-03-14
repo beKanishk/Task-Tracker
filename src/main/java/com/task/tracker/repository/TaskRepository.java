@@ -5,6 +5,7 @@ import com.task.tracker.model.TaskStatus;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public interface TaskRepository extends MongoRepository<Task, String> {
@@ -18,4 +19,6 @@ public interface TaskRepository extends MongoRepository<Task, String> {
     default List<Task> findByUserIdAndStatusActive(String userId) {
         return findByUserIdAndStatus(userId, TaskStatus.ACTIVE);
     }
+
+    long countByCreatedAt(LocalDate date);
 }

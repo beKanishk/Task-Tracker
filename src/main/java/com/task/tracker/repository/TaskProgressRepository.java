@@ -17,4 +17,8 @@ public interface TaskProgressRepository extends MongoRepository<TaskProgress, St
     TaskProgress findByUserIdAndDateAndTaskId(String userId, LocalDate date, String taskId);
 
     List<TaskProgress> findByUserIdAndDateBetween(String userId, LocalDate start, LocalDate end);
+
+    List<TaskProgress> findByDate(LocalDate date);
+
+    List<TaskProgress> findByDateBetween(LocalDate start, LocalDate end);
 }
