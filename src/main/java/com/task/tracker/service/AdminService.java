@@ -62,6 +62,28 @@ public class AdminService {
                 .build();
     }
 
+    public String migrateTimezone() {
+        int users = 0;
+        for (com.task.tracker.model.User user : userRepository.findAll()) {
+            if (user.getLastLogin() != null) {
+                user.setLastLogin(user.getLastLogin().plusMinutes(330));
+                userRepository.save(user);
+                users++;
+            }
+        }
+
+        int feedback = 0;
+        for (Feedback f : feedbackRepository.findAll()) {
+            if (f.getCreatedAt() != null) {
+                f.setCreatedAt(f.getCreatedAt().plusMinutes(330));
+                feedbackRepository.save(f);
+                feedback++;
+            }
+        }
+
+        return "Migrated: " + users + " user lastLogin(s), " + feedback + " feedback createdAt(s) → IST (+5:30)";
+    }
+
     public String migrateUsers() {
         List<com.task.tracker.model.User> users = userRepository.findAll();
         int count = 0;

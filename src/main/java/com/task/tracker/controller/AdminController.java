@@ -28,6 +28,12 @@ public class AdminController {
         return adminService.getUsers();
     }
 
+    @PostMapping("/migrate/timezone")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String migrateTimezone() {
+        return adminService.migrateTimezone();
+    }
+
 //    @PostMapping("/migrate/users")
 //    @PreAuthorize("hasRole('ADMIN')")
 //    public String migrateUsers() {
