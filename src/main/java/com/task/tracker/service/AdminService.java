@@ -28,6 +28,7 @@ public class AdminService {
     private final UserStreakRepository userStreakRepository;
     private final UserFatigueRepository userFatigueRepository;
     private final FeedbackRepository feedbackRepository;
+    private final DailySummaryService dailySummaryService;
 
     public AdminStatsDTO getStats() {
         LocalDate today = LocalDate.now();
@@ -127,5 +128,26 @@ public class AdminService {
                     .lastActiveDate(streak != null ? streak.getLastActiveDate() : null)
                     .build();
         }).toList();
+    }
+
+    public int recomputeAllDailySummaries() {
+        // group all progress entries by userId → distinct dates
+        Map<String, List<LocalDate>> byUser = taskProgressRepository.findAll()
+                .stream()
+                .collect(Collectors.groupingBy(
+                        TaskProgress::getUserId,
+                        Collectors.mapping(TaskProgress::getDate,
+                                Collectors.collectingAndThen(Collectors.toList(),
+                                        list -> list.stream().distinct().toList()))
+                ));
+
+        int count = 0;
+        for (Map.Entry<String, List<LocalDate>> entry : byUser.entrySet()) {
+            for (LocalDate date : entry.getValue()) {
+                dailySummaryService.computeDailySummary(entry.getKey(), date);
+            }
+            count++;
+        }
+        return count;
     }
 }

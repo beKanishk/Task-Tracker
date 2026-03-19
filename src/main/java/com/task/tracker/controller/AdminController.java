@@ -28,6 +28,13 @@ public class AdminController {
         return adminService.getUsers();
     }
 
+    @PostMapping("/recompute/summaries")
+    @PreAuthorize("hasRole('ADMIN')")
+    public String recomputeAllSummaries() {
+        int count = adminService.recomputeAllDailySummaries();
+        return "Recomputed daily summaries for " + count + " users.";
+    }
+
 //    @PostMapping("/migrate/timezone")
 //    @PreAuthorize("hasRole('ADMIN')")
 //    public String migrateTimezone() {
